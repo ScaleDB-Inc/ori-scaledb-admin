@@ -54,7 +54,7 @@ def yaml_environment_set(environment):
 #
 # Ori - generate the configuration sub-directories and files
 #
-def yaml_cluster_conf_update(yamlFile="", confDir=""):
+def yaml_cluster_conf_update():
     status = 0
     if constant.yaml2cnf.check_status() == 1:
         status = constant.yaml2cnf.check_status()
