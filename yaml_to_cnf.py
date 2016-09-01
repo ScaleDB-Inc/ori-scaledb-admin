@@ -134,13 +134,13 @@ class c_convertYAML2ClusterConfig:
         if status == 0:
             for paramName in dataValues['cas']:
                 f.write("CAS = " + str(paramName['ip'])+"\n")
-                self.create_directory(str(paramName['ip'])
+                self.create_directory(str(paramName['ip']))
             for paramName in dataValues['slm']:
                 f.write("SLM = " + str(paramName['ip'])+"\n")
                 self.create_directory(str(paramName['ip']))
             for paramName in dataValues['db']:
                 f.write("DB = " + str(paramName['ip'])+"\n")
-                self.create_directory(str(paramName['ip'])
+                self.create_directory(str(paramName['ip']))
         f.close()
         return status
 
