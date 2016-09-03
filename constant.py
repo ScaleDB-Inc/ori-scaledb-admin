@@ -123,6 +123,9 @@ logSeverity  = {
     }
 
 # YAML to CNF constants
+# For list sets (such as casDefaultParam): 
+#   the left value is the name in the YAML configuration and the right is the corresponding name in *.cnf
+
 yaml2cnf=yaml_to_cnf.c_convertYAML2ClusterConfig()
 yamlFile = "/etc/scaledb.d/scaledb.yaml"
 confDir = "/usr/local/scaledb/etc"
@@ -130,7 +133,7 @@ confDir = "/usr/local/scaledb/etc"
 slmDefaultParams = [
     ['ip', 'slm_ip'],
     ['server_port', 'slm_port'],
-    ['service_port', 'slm_service_port'],
+    ['service_port', 'scaledb_slm_service_port'],
     ['slm_debug_file', 'slm_debug_file']
 ]
 slm_debug_file = '/usr/local/scaledb/tmp/slm.cnf'
