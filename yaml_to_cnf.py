@@ -15,18 +15,19 @@ import constant
 import os
 import yaml
 
-class c_convertYAML2ClusterConfig:
+
+class c_convertYAML2CNF:
     #
     # initiate script
     # Status: 0
     #
-    def __init__(self, yamlFile="",confDir=""):
+    def __init__(self, yaml="",conf=""):
         self.status=0
-        if yamlFile is "" and confDir is "":
+        if yaml is "" and conf is "":
             pass
         else:
-            self.__get_value(yamlFile,confDir)
-        self.status = self.read_yaml()
+            self.status=self.__get_value(yaml,conf)
+        self.status=self.read_yaml()
 
     #
     # return 0 or 1 if status is ok
@@ -37,7 +38,7 @@ class c_convertYAML2ClusterConfig:
 
     #
     # Set YAML File and location of CNF (if not default)
-    # Status: >0 - question regarding premissions for /usr/local/scaledb/etc/cluster
+    # Status: >0 - question regarding permissions for /usr/local/scaledb/etc/cluster
     '''
     due to permissions I'm currently unable to add/alter files inside '/usr/local/scaledb/etc/cluster';
     as such I tested against '/home/ori/cluster/', and found the method working. If this will change
@@ -45,18 +46,16 @@ class c_convertYAML2ClusterConfig:
     copies the data from a tmp directory ['/home/scaledb/tmp/cluster/'] to the active directory.
     '''
     #
-    def __get_value(self, yamlFile,confDir):
-        status = 0
-        if yamlFile is not "":
-            if os.path.exists(yamlFile) is False:
-                status+=1
-            else:
-                constant.yamlFile = yamlFile
-        if confDir is not "":
-            if os.path.exists(confDir) is False:
-                status+=1
-            else:
-                constant.confDir = confDir
+    def __get_value(self, yaml,conf):
+        status=1
+        if yaml is not "":
+            if os.path.exists(yaml) is True:
+                constant.yamlFile=yaml
+                status=0
+        if conf is not "":
+            if os.path.exists(conf) is True:
+                constant.confDir=conf
+                status=0
         return status
 
     #
@@ -64,125 +63,96 @@ class c_convertYAML2ClusterConfig:
     # Status: 0
     #
     def read_yaml(self):
-        status = 0
+        status=0
         with open(constant.yamlFile, 'r') as stream:
             try:
                 self.yamlData = yaml.load(stream)
             except yaml.YAMLError as e:
                 print e
-                return 1
+                status=1
+        stream.close()
         return status
 
     #
-    # create cnf directory if not exists
-    # Note: there is no need to put base directory since it is stored under self.confDir
-    #
-    def create_directory(self,dirName):
-        status = 0
-        dName = "%s/%s" % (constant.confDir, dirName)
-
-        try:
-            os.path.isdir(dName)
-        except OSError as e:
-            print e
-            return 1
-
-        if not os.path.isdir(dName):
-            try:
-                os.system("mkdir %s " % dName)
-            except OSError as e:
-                status = 1
-                print e
-        return status
-
-    #
-    # open cnf files if not exists, and open to run
-    # Note: there is no need to put base directory since it is stored under self.confDir
+    # open conf files to write
     # Status 0
     #
-    def create_write_cnf(self,dirName,fileName):
-        status = 0
+    def write_to_conf(self,dirName,fileName):
         dName = "%s/%s" % (constant.confDir, dirName)
         if not os.path.isdir(dName):
-            status = self.create_directory(dirName)
+            os.system("mkdir %s " % dName)
+
         fName = "%s/%s" % (dName, fileName)
         if not os.path.isfile(fName):
-            try:
-                os.system("touch %s" % fName)
-            except OSError as e:
-                print e
-                return 1
+            os.system("touch %s" % fName)
         open(fName,'w').close()
-        return status,open(fName,'w')
+        return open(fName,'w')
 
     #
-    # create cluster.cnf
+    # create cluster.conf
     #   dataValues = self.yamlData['clusters'][0]
     #   paramName = groups of self.yamlData['clusters'][0]
     # Status: 0 - Other than question this part is DONE
-    # Status: >0 - Question in how cluster.cnf should look
+    # Status: >0 - Question in how cluster.conf should look
     #
     # Question:
     '''
-    There is a substantial difference between a test user cluster.cnf and the wiki version of cluster.cnf.
+    There is a substantial difference between a test user cluster.conf and the wiki version of cluster.conf.
     Which one should my output look like? (As of now it is the same as the wiki version"
     '''
     #
-    def cluster_cnf_create(self, dataValues):
-        status = 0
-        status,f=self.create_write_cnf("","cluster.cnf")
-        if status == 0:
-            for paramName in dataValues['cas']:
-                f.write("CAS = " + str(paramName['ip'])+"\n")
-                self.create_directory(str(paramName['ip']))
-            for paramName in dataValues['slm']:
-                f.write("SLM = " + str(paramName['ip'])+"\n")
-                self.create_directory(str(paramName['ip']))
-            for paramName in dataValues['db']:
-                f.write("DB = " + str(paramName['ip'])+"\n")
-                self.create_directory(str(paramName['ip']))
+    def cluster_conf_create(self, dataValues):
+        self.casIP=[]
+        self.slmIP=[]
+        self.dbIP=[]
+        f=self.write_to_conf("","cluster.cnf")
+        for paramName in dataValues['cas']:
+            f.write("CAS = " + str(paramName['ip'])+"\n")
+            self.casIP.append(paramName['ip'])
+        for paramName in dataValues['slm']:
+            f.write("SLM = " + str(paramName['ip'])+"\n")
+            self.slmIP.append(paramName['ip'])
+        for paramName in dataValues['db']:
+            f.write("DB = " + str(paramName['ip'])+"\n")
+            self.dbIP.append(paramName['ip'])
         f.close()
-        return status
 
     #
-    # create cluster.cnf
+    # create cluster.conf
     #   dataValues = self.yamlData['clusters'][0]['cas']
     #   casSet = group of dataValues
     #   casParam specific key from casDefaultParams
     # If the yaml files does not contain required data/log/debug params then we use the defaults
     # Status: 0
     #
-    def cas_cnf_create(self,dataValues):
-        status = 0
+    def cas_conf_create(self,dataValues):
         for casSet in dataValues:
             new_line=''
-            status,f=self.create_write_cnf(casSet['ip'],"cas.cnf")
-            if status == 0:
-                for casParam in constant.casDefaultParams:
-                    if casParam[0] in casSet.keys():
-                        if casParam[0] is "storage" and casSet[casParam[0]] == 0:
-                            f.write(new_line+casParam[1]+" = primary")
-                        elif casParam[0] is "storage" and casSet[casParam[0]] == 1:
-                            f.write(new_line+casParam[1]+" = mirror")
-                        else:
-                            f.write(new_line+casParam[1] + " = "+str(casSet[casParam[0]]))
+            f=self.write_to_conf(casSet['ip'],"cas.cnf")
+            for casParam in constant.casDefaultParams:
+                if casParam[0] in casSet.keys():
+                    if casParam[0] is "storage" and casSet[casParam[0]] == 0:
+                        f.write(new_line+casParam[1]+" = primary")
+                    elif casParam[0] is "storage" and casSet[casParam[0]] == 1:
+                        f.write(new_line+casParam[1]+" = mirror")
+                    else:
+                        f.write(new_line+casParam[1] + " = "+str(casSet[casParam[0]]))
 
-                        if new_line == '':
-                            new_line="\n"
+                    if new_line == '':
+                        new_line="\n"
 
-                self.cas_hostPort_create(f)
-                for casParam in constant.casDefaultParams:
-                    if "data_directory" in casParam[0]:
-                        f.write(new_line+casParam[1]+" = "+constant.cas_data_directory)
-                    elif "log_directory" in casParam[0]:
-                        f.write(new_line+casParam[1]+" = "+constant.cas_log_directory)
-                    elif "file" in casParam[0]:
-                        f.write(new_line+casParam[1]+" = "+constant.cas_debug_directory)
+            self.cas_hostPort_create(f)
+            for casParam in constant.casDefaultParams:
+                if "data_directory" in casParam[0]:
+                    f.write(new_line+casParam[1]+" = "+constant.cas_data_directory)
+                elif "log_directory" in casParam[0]:
+                    f.write(new_line+casParam[1]+" = "+constant.cas_log_directory)
+                elif "file" in casParam[0]:
+                    f.write(new_line+casParam[1]+" = "+constant.cas_debug_directory)
             f.close()
-            return status
 
     #
-    # specify the grouping of CAS Host and port for cas.cnf
+    # specify the grouping of CAS Host and port for cas.conf
     # Status: 0
     #
     def cas_hostPort_create(self,f):
@@ -214,58 +184,53 @@ class c_convertYAML2ClusterConfig:
 
 
     #
-    # create db.cnf
+    # create db.conf
     #   dataValues = self.yamlData['clusters'][0]['db']
     #   dbSet = dict group inside dataValue
     #   dbParam = specific key from dbSet
     # If the yaml files does not contain required data/log/debug params then we use the defaults
     # Status: 0
     #
-    def db_cnf_create(self, dataValues):
-        status=0
+    def db_conf_create(self, dataValues):
         for dbSet in dataValues:
             new_line=""
-            status,f=self.create_write_cnf(dbSet['ip'],"db.cnf")
-            if status == 0:
-                for dbParam in constant.dbDefaultParams:
-                    if dbParam[0] in dbSet.keys():
-                        f.write(new_line+dbParam[1]+" = "+dbSet[dbParam[0]])
-                    if new_line is "":
-                        new_line="\n"
-                self.cas_other_config(f)
-                for dbParam in constant.dbDefaultParams:
-                    if "file" in dbParam[0]:
-                        f.write(new_line+dbParam[1]+" = "+constant.db_debug_file)
+            f=self.write_to_conf(dbSet['ip'],"db.cnf")
+            for dbParam in constant.dbDefaultParams:
+                if dbParam[0] in dbSet.keys():
+                    f.write(new_line+dbParam[1]+" = "+dbSet[dbParam[0]])
+                if new_line is "":
+                    new_line="\n"
+            self.cas_other_config(f)
+            for dbParam in constant.dbDefaultParams:
+                if "file" in dbParam[0]:
+                    f.write(new_line+dbParam[1]+" = "+constant.db_debug_file)
             f.close()
-        return status
 
     #
-    # create slm.cnf
+    # create slm.conf
     #   dataValues = self.yamlData['clusters'][0]['slm']
     #   slmSet = dict group inside dataValues
     #   slmParam = specific key from slmSet
     # If the yaml files does not contain required data/log/debug params then we use the defaults
     # Status: 0
     #
-    def slm_cnf_create(self, dataValues):
-        status=0
+    def slm_conf_create(self, dataValues):
         for slmSet in dataValues:
-            status,f=self.create_write_cnf(slmSet['ip'],"slm.cnf")
-            if status == 0:
-                new_line=""
-                for slmParam in constant.slmDefaultParams:
-                    if slmParam[0] in slmSet.keys():
-                        f.write(new_line+ slmParam[1] + " = " + str(slmSet[slmParam[0]]))
-                    if new_line is "":
-                        new_line="\n"
-                self.cas_other_config(f)
-                for slmParam in constant.slmDefaultParams:
-                    if "file" in slmParam[0]:
-                        f.write(new_line+slmParam[1]+" = "+constant.slm_debug_file)
+            f=self.write_to_conf(slmSet['ip'],"slm.cnf")
+            new_line=""
+            for slmParam in constant.slmDefaultParams:
+                if slmParam[0] in slmSet.keys():
+                    f.write(new_line+ slmParam[1] + " = " + str(slmSet[slmParam[0]]))
+                if new_line is "":
+                    new_line="\n"
+            self.cas_other_config(f)
+            for slmParam in constant.slmDefaultParams:
+                if "file" in slmParam[0]:
+                    f.write(new_line+slmParam[1]+" = "+constant.slm_debug_file)
             f.close()
-            return status
+
     #
-    # specify scaledb_cas_config_ips and scaledb_cas_config_ports for slm.cnf and db.cnf
+    # specify scaledb_cas_config_ips and scaledb_cas_config_ports for slm.conf and db.conf
     # Status:0
     #
     def cas_other_config(self,f):
@@ -283,28 +248,78 @@ class c_convertYAML2ClusterConfig:
         f.write("\nscaledb_cas_config_ports = " + ports+"\n")
 
     #
+    # check that the creation of the files and subdirectories was successful
+    #
+    def create_file_check(self):
+        status=0
+        error="Errors: "
+        errors=error
+        #check cluster.cnf
+        if os.path.exists(constant.confDir+"/cluster.cnf") is False:
+            status+=1
+            errors+="\n\t%s/cluster.cnf does not exists" % constant.confDir
+
+        #check cas.cnf
+        for ip in self.casIP:
+            dir=("%s/%s" % (constant.confDir, ip))
+            file=("%s/%s/cas.cnf" % (constant.confDir, ip))
+            if os.path.exists(dir) is False:
+                status+=1
+                errors+="\n\t%s directory was not created" % dir
+            elif os.path.exists(file) is False:
+                status+=1
+                errors+="\n\t%s file was not created" % file
+
+        #check slm.cnf
+        for ip in self.slmIP:
+            dir=("%s/%s" % (constant.confDir, ip))
+            file=("%s/%s/slm.cnf" % (constant.confDir, ip))
+            if os.path.exists(dir) is False:
+                status+=1
+                errors+="\n\t%s directory was not created" % dir
+            elif os.path.exists(file) is False:
+                status+=1
+                errors+="\n\t%s file was not created" % file
+
+        #check db.cnf
+        for ip in self.dbIP:
+            dir=("%s/%s" % (constant.confDir, ip))
+            file=("%s/%s/db.cnf" % (constant.confDir, ip))
+            if os.path.exists(dir) is False:
+                status+=1
+                errors+="\n\t%s directory was not created" % dir
+            elif os.path.exists(file) is False:
+                status+=1
+                errors+="\n\t%s file was not created" % file
+
+        if errors is error:
+            pass
+        else:
+            print errors
+        return status
+
+
+
+
+    #
     # distinguish which file to use based on key
     # Status : 0
     #
     def select_sub_process(self):
-        status = 0
+        status=0
         for key in self.yamlData['clusters'][0].keys():
             if key == 'cluster':
-                status = self.cluster_cnf_create(self.yamlData['clusters'][0])
-                if status == 1:
-                    return status
+                self.cluster_conf_create(self.yamlData['clusters'][0])
             elif key == 'cas':
-                status = self.cas_cnf_create(self.yamlData['clusters'][0]['cas'])
-                if status == 1:
-                    return status
+                self.cas_conf_create(self.yamlData['clusters'][0]['cas'])
             elif key == 'slm':
-                status = self.slm_cnf_create(self.yamlData['clusters'][0]['slm'])
-                if status == 1:
-                    return status
+                self.slm_conf_create(self.yamlData['clusters'][0]['slm'])
             elif key == 'db':
-                status = self.db_cnf_create(self.yamlData['clusters'][0]['db'])
-                if status == 1:
-                    return status
-
-
-#
+                self.db_conf_create(self.yamlData['clusters'][0]['db'])
+        status=self.create_file_check()
+        return status 
+'''
+if __name__ == "__main__":
+    convYAML2CNF = c_convertYAML2CNF(yaml="ScaleDB-ONE_name.yaml",conf="conf")
+    convYAML2CNF.select_sub_process()
+'''
