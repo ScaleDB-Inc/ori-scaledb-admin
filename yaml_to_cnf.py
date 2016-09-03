@@ -194,7 +194,7 @@ class c_convertYAML2CNF:
     def db_conf_create(self, dataValues):
         for dbSet in dataValues:
             new_line=""
-            f=self.write_to_conf(dbSet['ip'],"db.cnf")
+            f=self.write_to_conf(dbSet['ip'],"scaledb.cnf")
             for dbParam in constant.dbDefaultParams:
                 if dbParam[0] in dbSet.keys():
                     f.write(new_line+dbParam[1]+" = "+dbSet[dbParam[0]])
@@ -284,7 +284,7 @@ class c_convertYAML2CNF:
         #check db.cnf
         for ip in self.dbIP:
             dir=("%s/%s" % (constant.confDir, ip))
-            file=("%s/%s/db.cnf" % (constant.confDir, ip))
+            file=("%s/%s/scaledb.cnf" % (constant.confDir, ip))
             if os.path.exists(dir) is False:
                 status+=1
                 errors+="\n\t%s directory was not created" % dir
