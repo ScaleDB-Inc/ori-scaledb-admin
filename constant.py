@@ -125,7 +125,7 @@ logSeverity  = {
 # YAML to CNF constants
 yaml2cnf=yaml_to_cnf.c_convertYAML2ClusterConfig()
 yamlFile = "/etc/scaledb.d/scaledb.yaml"
-confDir = "/usr/local/scaledb/etc/cluster"
+confDir = "/usr/local/scaledb/etc"
 
 slmDefaultParams = [
     ['ip', 'slm_ip'],
