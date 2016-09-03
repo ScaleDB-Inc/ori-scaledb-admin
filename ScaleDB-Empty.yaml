@@ -1,0 +1,35 @@
+# Empty YAML file for ScaleDB Configuration. A user can add more nodes per component. 
+---
+clusters:
+  - cluster:
+    id:
+    name:
+    description:
+    db:
+      - node:
+        id:
+        name:
+        description:
+        ip:
+        server_port:
+        service_port:
+    slm:
+      - node:
+        id:
+        name:
+        description:
+        ip:
+        server_port:
+        service_port:
+        initial_status: 
+    cas:
+      - node:
+        id:
+        name:
+        description:  
+        ip:
+        server_port:  
+        service_port:
+        volume:
+        storage:      
+

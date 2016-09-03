@@ -1,0 +1,36 @@
+# Example of a YAML Configuration file for ScaleDB ONE where the IP address is a location 
+---
+clusters:
+  - cluster:
+    id:          0
+    name:        RA
+    description: Reference Architecture
+    db:
+      - node:
+        id:           2
+        name:         db0
+        description:  Database node 0
+        ip:           127.0.0.1
+        server_port:  3306
+        service_port: 3307
+    slm:
+      - node:
+        id:             1
+        name:           slm0
+        description:    Cluster Manager node 0
+        ip:             127.0.0.1 
+        server_port:    23306
+        service_port:   23307
+        initial_status: active
+
+    cas:
+      - node:
+        id:           0
+        name:         casv0s0
+        description:  Volume 0 Storage node 0
+        ip:           127.0.0.1
+        server_port:  33306
+        service_port: 33307
+        volume:       0
+        storage:      0
+

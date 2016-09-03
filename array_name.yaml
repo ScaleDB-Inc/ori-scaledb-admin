@@ -1,0 +1,19 @@
+# Example of a YAML Configuration file for ScaleDB where each node is in a dictionary
+---
+clusters:
+- cas:
+  - {description: Volume 0 Storage node 0, id: 4, ip: cas_v0s0, name: casv0s0, node: null, server_port: 23306, service_port: 23307, storage: 0, volume: 0}
+  - {description: Volume 0 Storage node 1, id: 5, ip: cas_v0s1, name: casv0s1, node: null, server_port: 23306, service_port: 23307, storage: 1, volume: 0}
+  - {description: Volume 1 Storage node 0, id: 6, ip: cas_v1s0, name: casv1s0, node: null, server_port: 23306, service_port: 23307, storage: 0, volume: 1}
+  - {description: Volume 1 Storage node 1, id: 7, ip: cas_v1s1, name: casv1s1, node: null, server_port: 23306, service_port: 23307, storage: 1, volume: 1}
+  cluster: null
+  db:
+  - {description: Database node 0, id: 0, ip: db0, name: db0, node: null, server_port: 3306, service_port: 33307}
+  - {description: Database node 1, id: 1, ip: db1, name: db1, node: null, server_port: 3306, service_port: 33307}
+  description: Reference Architecture
+  environment: Linux
+  id: 0
+  name: RA
+  slm:
+  - {description: Cluster Manager node 0, id: 2, initial_status: active, ip: slm_active, name: slm0, node: null, server_port: 23306, service_port: 23307}
+  - {description: Cluster Manager node 1, id: 3, initial_status: standby, ip: slm_standby, name: slm1, node: null, server_port: 23306, service_port: 23307}
