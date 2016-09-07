@@ -126,9 +126,9 @@ logSeverity  = {
 # For list sets (such as casDefaultParam): 
 #   the left value is the name in the YAML configuration and the right is the corresponding name in *.cnf
 
-#yaml2cnf=yaml_to_cnf.c_convertYAML2ClusterConfig()
 yamlFile = "/home/ori/yaml2cnf/yaml-files/ScaleDB-RA_name.yaml"
 confDir = "/usr/local/scaledb/etc"
+yaml2cnf=yaml_to_cnf.c_convertYAML2ClusterConfig()
 
 slmDefaultParams = [
     ['ip', 'slm_ip'],
