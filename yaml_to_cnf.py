@@ -352,8 +352,8 @@ class c_convertYAML2CNF:
                 self.db_conf_create(self.yamlData['clusters'][0]['db'])
         status=self.create_file_check()
         return status 
-
+'''
 if __name__ == "__main__":
     convYAML2CNF = c_convertYAML2CNF(yaml="/home/ori/yaml2cnf/yaml-files/ScaleDB-RA_ip.yaml",conf="/home/ori/yaml2cnf/conf")
     print convYAML2CNF.select_sub_process()
-
+'''
