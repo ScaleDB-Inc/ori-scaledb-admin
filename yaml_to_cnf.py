@@ -52,10 +52,14 @@ class c_convertYAML2CNF:
             if os.path.exists(yaml) is True:
                 constant.yamlFile=yaml
                 status=0
+            else:
+                print "ERROR: YAML file doesn't exist"
+                return status
         if conf is not "":
-            if os.path.exists(conf) is True:
-                constant.confDir=conf
-                status=0
+            if os.path.exists(conf) is False:
+                os.mkdir(conf)
+            constant.confDir=conf
+            status=0
         return status
 
     #
@@ -105,16 +109,41 @@ class c_convertYAML2CNF:
         self.casIP=[]
         self.slmIP=[]
         self.dbIP=[]
+
+
+        #create cluster.cnf
         f=self.write_to_conf("","cluster.cnf")
+
+        #get IPs for CAS
+        dbDict={}
         for paramName in dataValues['cas']:
-            f.write("CAS = " + str(paramName['ip'])+"\n")
-            self.casIP.append(paramName['ip'])
+            if paramName['volume'] not in dbDict.keys():
+                dbDict[paramName['volume']]=[]
+            dbDict[paramName['volume']].insert(paramName['storage'],paramName['ip'])
+        for key in dbDict.keys():
+            for ip in dbDict[key]:
+                f.write("CAS=" +str(ip)+"\n")
+                self.casIP.append(ip)
+
+        #get IPs for SLM
+        dbDict={}
+        i=1
         for paramName in dataValues['slm']:
-            f.write("SLM = " + str(paramName['ip'])+"\n")
-            self.slmIP.append(paramName['ip'])
+            if paramName['initial_status'] == "active":
+                dbDict[0]=paramName['ip']
+            else:
+                dbDict[i]=paramName['ip']
+                i+=1
+        for ip in sorted(dbDict.keys()):
+            f.write("SLM="+str(dbDict[ip])+"\n")
+            self.slmIP.append(dbDict[ip])
+
+        dbDict={}
         for paramName in dataValues['db']:
-            f.write("DB = " + str(paramName['ip'])+"\n")
-            self.dbIP.append(paramName['ip'])
+            dbDict[paramName['description'][-1]]=paramName['ip']
+        for key in sorted(dbDict.keys()):
+            f.write("DB="+str(dbDict[key])+"\n")
+            self.dbIP.append(dbDict[key])
         f.close()
 
     #
@@ -134,21 +163,21 @@ class c_convertYAML2CNF:
                     if casParam[0] is "storage" and casSet[casParam[0]] == 0:
                         f.write(new_line+casParam[1]+" = primary")
                     elif casParam[0] is "storage" and casSet[casParam[0]] == 1:
-                        f.write(new_line+casParam[1]+" = mirror")
+                        f.write(new_line+casParam[1]+"=mirror")
+                    elif casParam[0] == "force_system_key":
+                        f.write("\n"+new_line+casParam[1] + "="+str(casSet[casParam[0]]))
                     else:
-                        f.write(new_line+casParam[1] + " = "+str(casSet[casParam[0]]))
-
+                        f.write(new_line+casParam[1] + "="+str(casSet[casParam[0]]))
                     if new_line == '':
                         new_line="\n"
-
             self.cas_hostPort_create(f)
             for casParam in constant.casDefaultParams:
                 if "data_directory" in casParam[0]:
-                    f.write(new_line+casParam[1]+" = "+constant.cas_data_directory)
+                    f.write(new_line+casParam[1]+"="+constant.cas_data_directory)
                 elif "log_directory" in casParam[0]:
-                    f.write(new_line+casParam[1]+" = "+constant.cas_log_directory)
-                elif "file" in casParam[0]:
-                    f.write(new_line+casParam[1]+" = "+constant.cas_debug_directory)
+                    f.write(new_line+casParam[1]+"="+constant.cas_log_directory)
+                elif "debug_file" in casParam[0]:
+                    f.write(new_line+casParam[1]+"="+constant.cas_debug_directory)
             f.close()
 
     #
@@ -158,29 +187,34 @@ class c_convertYAML2CNF:
     def cas_hostPort_create(self,f):
         primary_ips = ''
         primary_ports = ''
-        mirror_ports = ''
+        primary_service_port = ''
         mirror_ips = ''
-
+        mirror_ports = ''
+        mirror_service_port = ''
         for casSet in self.yamlData['clusters'][0]['cas']:
             if casSet['storage'] == 0 and primary_ips is '':
                 primary_ips = casSet['ip']
                 primary_ports = str(casSet['server_port'])
-
+                primary_service_port = str(casSet['service_port'])
             elif casSet['storage'] == 0 and primary_ips is not '':
-                primary_ips = primary_ips+","+casSet['ip']
-                primary_ports = primary_ports+","+str(casSet['server_port'])
-
+                primary_ips+=","+casSet['ip']
+                primary_ports+=","+str(casSet['server_port'])
+                primary_service_port+=","+str(casSet['service_port'])
             elif casSet['storage'] == 1 and mirror_ips is '':
                 mirror_ips = casSet['ip']
                 mirror_ports = str(casSet['server_port'])
+                mirror_service_port = str(casSet['service_port'])
             else:
-                mirror_ips = mirror_ips+","+str(casSet['ip'])
-                mirror_ports = mirror_ports+","+str(casSet['server_port'])
+                mirror_ips+=","+str(casSet['ip'])
+                mirror_ports+=","+str(casSet['server_port'])
+                mirror_service_port+=","+str(casSet['service_port'])
 
-        f.write("\n\nscaledb_cas_server_ips = "+primary_ips)
-        f.write("\nscaledb_cas_server_ports = "+primary_ports)
-        f.write("\nscaledb_cas_mirror_ips = " + mirror_ips)
-        f.write("\nscaledb_cas_mirror_ports = " + mirror_ports+"\n")
+        f.write("\n\nscaledb_cas_server_ips="+primary_ips)
+        f.write("\nscaledb_cas_server_ports="+primary_ports)
+        f.write("\nscaledb_cas_server_service_ports="+primary_service_port)
+        f.write("\nscaledb_cas_mirror_ips="+mirror_ips)
+        f.write("\nscaledb_cas_mirror_ports="+mirror_ports)
+        f.write("\nscaledb_cas_mirror_service_ports"+mirror_service_port+"\n")
 
 
     #
@@ -197,13 +231,13 @@ class c_convertYAML2CNF:
             f=self.write_to_conf(dbSet['ip'],"scaledb.cnf")
             for dbParam in constant.dbDefaultParams:
                 if dbParam[0] in dbSet.keys():
-                    f.write(new_line+dbParam[1]+" = "+dbSet[dbParam[0]])
+                    f.write(new_line+dbParam[1]+"="+str(dbSet[dbParam[0]]))
                 if new_line is "":
                     new_line="\n"
             self.cas_other_config(f)
             for dbParam in constant.dbDefaultParams:
                 if "file" in dbParam[0]:
-                    f.write(new_line+dbParam[1]+" = "+constant.db_debug_file)
+                    f.write(new_line+dbParam[1]+"="+constant.db_debug_file)
             f.close()
 
     #
@@ -226,7 +260,7 @@ class c_convertYAML2CNF:
             self.cas_other_config(f)
             for slmParam in constant.slmDefaultParams:
                 if "file" in slmParam[0]:
-                    f.write(new_line+slmParam[1]+" = "+constant.slm_debug_file)
+                    f.write(new_line+slmParam[1]+"="+constant.slm_debug_file)
             f.close()
 
     #
@@ -318,8 +352,8 @@ class c_convertYAML2CNF:
                 self.db_conf_create(self.yamlData['clusters'][0]['db'])
         status=self.create_file_check()
         return status 
-'''
+
 if __name__ == "__main__":
-    convYAML2CNF = c_convertYAML2CNF(yaml="ScaleDB-ONE_name.yaml",conf="conf")
-    convYAML2CNF.select_sub_process()
-'''
+    convYAML2CNF = c_convertYAML2CNF(yaml="/home/ori/yaml2cnf/yaml-files/ScaleDB-RA_ip.yaml",conf="/home/ori/yaml2cnf/conf")
+    print convYAML2CNF.select_sub_process()
+

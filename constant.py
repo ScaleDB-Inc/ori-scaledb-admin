@@ -126,8 +126,8 @@ logSeverity  = {
 # For list sets (such as casDefaultParam): 
 #   the left value is the name in the YAML configuration and the right is the corresponding name in *.cnf
 
-yaml2cnf=yaml_to_cnf.c_convertYAML2ClusterConfig()
-yamlFile = "/etc/scaledb.d/scaledb.yaml"
+#yaml2cnf=yaml_to_cnf.c_convertYAML2ClusterConfig()
+yamlFile = "/home/ori/yaml2cnf/yaml-files/ScaleDB-RA_name.yaml"
 confDir = "/usr/local/scaledb/etc"
 
 slmDefaultParams = [
@@ -136,19 +136,24 @@ slmDefaultParams = [
     ['service_port', 'scaledb_slm_service_port'],
     ['slm_debug_file', 'slm_debug_file']
 ]
-slm_debug_file = '/usr/local/scaledb/tmp/slm.cnf'
+slm_debug_file = '/usr/local/scaledb/tmp/slm.log'
 
 casDefaultParams = [
-    ['id', 'cas_id'],
+    ['volume', 'cas_id'],
     ['storage', 'cas_type'],
     ['ip', 'cas_ip'],
     ['server_port', 'cas_port'],
+    #other ("less" required) parameters
+    ['force_system_key','stream_with_user_time_stamp'],
+    ['max_file_size','scaledb_max_file_size'],
+    ['file_extent_size','scaledb_file_extent_size'],
     ['cas_data_directory', 'scaledb_data_directory'],
     ['cas_log_directory', 'scaledb_log_directory'],
     ['cas_debug_file', 'scaledb_debug_file'],
     ['disable_varchar', 'scaledb_disable_varchar_check'],
     ['async', 'scaledb_streaming_autocommit'],
-    ['cas_recovery_mode', 'scaledb_recovery_mode']
+    ['cas_recovery_mode', 'scaledb_recovery_mode'],
+
 ]
 cas_data_directory = '/usr/local/scaledb/data'
 cas_log_directory = '/usr/local/scaledb/logs'
@@ -156,6 +161,7 @@ cas_debug_directory = '/usr/local/scaledb/tmp/cas.log'
 
 dbDefaultParams = [
     ['name', 'scaledb_node_name'],
+    ['service_port','scaledb_service_port'],
     ['db_debug_file', 'scaledb_debug_file'],
     ['scaledb_buffer_size_index', 'scaledb_buffer_size_index'],
     ['scaledb_buffer_size_data', 'scaledb_buffer_size_data'],
