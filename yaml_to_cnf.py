@@ -263,15 +263,21 @@ class c_convertYAML2CNF:
                     f.write(new_line+slmParam[1]+"="+constant.slm_debug_file)
             f.close()
 
-    #
+      #
     # specify scaledb_cas_config_ips and scaledb_cas_config_ports for slm.conf and db.conf
+    # 2016-09-09 - changed method such that it uses the smallest volume number rather than 0
     # Status:0
     #
     def cas_other_config(self,f):
         ips = ''
         ports = ''
+        volumeList=[]
         for casSet in self.yamlData['clusters'][0]['cas']:
-            if casSet['volume'] == 0:
+            if casSet['volume'] not in volumeList:
+                volumeList.append(casSet['volume'])
+
+        for casSet in self.yamlData['clusters'][0]['cas']:
+            if casSet['volume'] == min(volumeList):
                 if ips is '':
                     ips = casSet['ip']
                     ports = str(casSet['server_port'])
@@ -280,6 +286,7 @@ class c_convertYAML2CNF:
                     ports = ports+','+str(casSet['server_port'])
         f.write("\n\nscaledb_cas_config_ips = " + ips)
         f.write("\nscaledb_cas_config_ports = " + ports+"\n")
+
 
     #
     # check that the creation of the files and subdirectories was successful
